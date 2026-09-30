@@ -1,0 +1,33 @@
+name: Alerta CI/CD Test
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test-runner:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show runner information
+        run: |
+          echo "GitHub Actions is running on my self-hosted runner"
+          echo "Hostname:"
+          hostname
+          echo "User:"
+          whoami
+          echo "Working directory:"
+          pwd
+
+      - name: Test Ubuntu environment
+        run: |
+          echo "OS:"
+          cat /etc/os-release
+          echo "Python:"
+          python3 --version || true
+          echo "Docker:"
+          docker --version || true
