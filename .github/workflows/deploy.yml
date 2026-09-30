@@ -1,4 +1,4 @@
-name: Alerta CI
+name: Alerta CI/CD
 
 on:
   push:
@@ -7,17 +7,12 @@ on:
 
 jobs:
   test:
+    name: Test Alerta
     runs-on: [self-hosted, Linux, X64]
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Show repository
-        run: |
-          echo "Repository:"
-          pwd
-          ls -la
 
       - name: Check Python
         run: |
@@ -51,8 +46,53 @@ jobs:
             echo "No tests directory found"
           fi
 
-      - name: CI completed
+  deploy:
+    name: Deploy Alerta
+    needs: test
+    runs-on: [self-hosted, Linux, X64]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check Docker
+        run: |
+          docker --version
+          docker compose version
+
+      - name: Pull latest Docker images
+        run: |
+          docker compose pull
+
+      - name: Deploy Alerta
+        run: |
+          docker compose up -d --remove-orphans
+
+      - name: Show running containers
+        run: |
+          docker compose ps
+
+      - name: Wait for Alerta
+        run: |
+          echo "Waiting for Alerta to become available..."
+
+          for i in {1..30}; do
+            if curl -fsS http://localhost:8080/ > /dev/null; then
+              echo "Alerta is available"
+              exit 0
+            fi
+
+            echo "Attempt $i/30 - Alerta not ready yet"
+            sleep 2
+          done
+
+          echo "Alerta failed health check"
+          docker compose ps
+          docker compose logs --tail=100 alerta
+          exit 1
+
+      - name: Deployment successful
         run: |
           echo "====================================="
-          echo "Alerta CI completed"
+          echo "Alerta deployment completed"
           echo "====================================="
