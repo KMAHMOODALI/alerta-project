@@ -1,32 +1,92 @@
----
-- name: Deploy Alerta QA
-  hosts: qa
+    - name: Send Disk Space alert
+      ansible.builtin.uri:
+        url: "{{ alerta_url }}/alert"
+        method: POST
+        body_format: json
+        body:
+          resource: "web-01"
+          event: "DiskSpaceLow"
+          environment: "QA"
+          severity: "minor"
+          service:
+            - "Web"
+          group: "Storage"
+          value: "85%"
+          text: "Disk usage is above 85% on web-01"
+          origin: "ansible"
+          tags:
+            - "qa"
+            - "linux"
+            - "disk"
+        status_code:
+          - 200
+          - 201
+          - 202
+        return_content: true
+      register: disk_alert
 
-  tasks:
+    - name: Send API High Latency alert
+      ansible.builtin.uri:
+        url: "{{ alerta_url }}/alert"
+        method: POST
+        body_format: json
+        body:
+          resource: "api-01"
+          event: "HighLatency"
+          environment: "QA"
+          severity: "major"
+          service:
+            - "API"
+          group: "Performance"
+          value: "2400ms"
+          text: "API response time is above 2 seconds"
+          origin: "ansible"
+          tags:
+            - "qa"
+            - "api"
+            - "latency"
+        status_code:
+          - 200
+          - 201
+          - 202
+        return_content: true
+      register: latency_alert
 
-    - name: Create Alerta QA deployment directory
-      ansible.builtin.file:
-        path: "{{ ansible_env.HOME }}/alerta-qa"
-        state: directory
-        mode: "0755"
+    - name: Send Redis Connection alert
+      ansible.builtin.uri:
+        url: "{{ alerta_url }}/alert"
+        method: POST
+        body_format: json
+        body:
+          resource: "redis-01"
+          event: "RedisConnectionFailed"
+          environment: "QA"
+          severity: "critical"
+          service:
+            - "Cache"
+          group: "Database"
+          value: "connection_failed"
+          text: "Unable to connect to Redis"
+          origin: "ansible"
+          tags:
+            - "qa"
+            - "redis"
+            - "cache"
+        status_code:
+          - 200
+          - 201
+          - 202
+        return_content: true
+      register: redis_alert
 
-    - name: Copy Docker Compose configuration
-      ansible.builtin.copy:
-        src: "{{ playbook_dir }}/../compose.yaml"
-        dest: "{{ ansible_env.HOME }}/alerta-qa/compose.yaml"
-        mode: "0644"
-
-    - name: Start Alerta QA stack
-      ansible.builtin.command:
-        cmd: docker compose up -d
-        chdir: "{{ ansible_env.HOME }}/alerta-qa"
-
-    - name: Show running containers
-      ansible.builtin.command:
-        cmd: docker ps
-      register: docker_status
-      changed_when: false
-
-    - name: Display running containers
+    - name: Display Disk Space response
       ansible.builtin.debug:
-        var: docker_status.stdout_lines
+        var: disk_alert.json
+
+    - name: Display API latency response
+      ansible.builtin.debug:
+        var: latency_alert.json
+
+    - name: Display Redis response
+      ansible.builtin.debug:
+        var: redis_alert.json
