@@ -1,4 +1,4 @@
-```yaml
+
 name: Alerta CI/CD
 
 on:
@@ -105,4 +105,3 @@ jobs:
           echo "Alerta deployment completed"
           echo "Ansible alerts deployed successfully"
           echo "====================================="
-```
