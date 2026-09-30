@@ -92,6 +92,7 @@ jobs:
           exit 1
 
       - name: Deployment successful
+      
         run: |
           echo "====================================="
           echo "Alerta deployment completed"
