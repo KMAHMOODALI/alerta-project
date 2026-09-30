@@ -1,0 +1,32 @@
+---
+- name: Deploy Alerta QA
+  hosts: qa
+
+  tasks:
+
+    - name: Create Alerta QA deployment directory
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/alerta-qa"
+        state: directory
+        mode: "0755"
+
+    - name: Copy Docker Compose configuration
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../compose.yaml"
+        dest: "{{ ansible_env.HOME }}/alerta-qa/compose.yaml"
+        mode: "0644"
+
+    - name: Start Alerta QA stack
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: "{{ ansible_env.HOME }}/alerta-qa"
+
+    - name: Show running containers
+      ansible.builtin.command:
+        cmd: docker ps
+      register: docker_status
+      changed_when: false
+
+    - name: Display running containers
+      ansible.builtin.debug:
+        var: docker_status.stdout_lines
