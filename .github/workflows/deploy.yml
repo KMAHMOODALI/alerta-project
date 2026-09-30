@@ -13,21 +13,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Show runner information
+      - name: Test self-hosted runner
         run: |
-          echo "GitHub Actions is running on my self-hosted runner"
+          echo "GitHub Actions is running on my Ubuntu machine"
           echo "Hostname:"
           hostname
           echo "User:"
           whoami
-          echo "Working directory:"
+          echo "Current directory:"
           pwd
 
-      - name: Test Ubuntu environment
+      - name: Test environment
         run: |
-          echo "OS:"
+          echo "Ubuntu:"
           cat /etc/os-release
           echo "Python:"
           python3 --version || true
-          echo "Docker:"
-          docker --version || true
