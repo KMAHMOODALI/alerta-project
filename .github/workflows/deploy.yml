@@ -1,3 +1,4 @@
+```yaml
 name: Alerta CI/CD
 
 on:
@@ -6,6 +7,7 @@ on:
       - master
 
 jobs:
+
   test:
     name: Test Alerta
     runs-on: [self-hosted, Linux, X64]
@@ -46,6 +48,7 @@ jobs:
             echo "No tests directory found"
           fi
 
+
   deploy:
     name: Deploy Alerta
     needs: test
@@ -74,7 +77,7 @@ jobs:
 
       - name: Wait for Alerta
         run: |
-          echo "Waiting for Alerta to become available..."
+          echo "Waiting for Alerta..."
 
           for i in {1..30}; do
             if curl -fsS http://localhost:8080/ > /dev/null; then
@@ -82,7 +85,7 @@ jobs:
               exit 0
             fi
 
-            echo "Attempt $i/30 - Alerta not ready yet"
+            echo "Attempt $i/30"
             sleep 2
           done
 
@@ -91,9 +94,15 @@ jobs:
           docker compose logs --tail=100 alerta
           exit 1
 
+      - name: Run Ansible
+        run: |
+          echo "Running Ansible QA deployment..."
+          ansible-playbook -i inventory ansible/deploy-qa.yml
+
       - name: Deployment successful
-      
         run: |
           echo "====================================="
           echo "Alerta deployment completed"
+          echo "Ansible alerts deployed successfully"
           echo "====================================="
+```
