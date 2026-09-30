@@ -1,3 +1,104 @@
+cat > ansible/deploy-qa.yml <<'EOF'
+---
+- name: Send test alerts to Alerta QA
+  hosts: alerta
+  connection: local
+  gather_facts: false
+
+  vars:
+    alerta_url: "http://localhost:8080/api"
+
+  tasks:
+
+    - name: Check Alerta API is reachable
+      ansible.builtin.uri:
+        url: "{{ alerta_url }}/alerts"
+        method: GET
+        status_code: 200
+        return_content: true
+      register: alerta_status
+
+    - name: Send High CPU alert
+      ansible.builtin.uri:
+        url: "{{ alerta_url }}/alert"
+        method: POST
+        body_format: json
+        body:
+          resource: "web-01"
+          event: "HighCPU"
+          environment: "QA"
+          severity: "major"
+          service:
+            - "Web"
+          group: "Performance"
+          value: "92%"
+          text: "CPU usage is above 90% on web-01"
+          origin: "ansible"
+          tags:
+            - "qa"
+            - "linux"
+            - "cpu"
+        status_code:
+          - 200
+          - 201
+          - 202
+        return_content: true
+      register: high_cpu_alert
+
+    - name: Send MongoDB problem alert
+      ansible.builtin.uri:
+        url: "{{ alerta_url }}/alert"
+        method: POST
+        body_format: json
+        body:
+          resource: "mongodb-01"
+          event: "MongoDBProblem"
+          environment: "QA"
+          severity: "critical"
+          service:
+            - "Database"
+          group: "Database"
+          value: "connection_failed"
+          text: "MongoDB connectivity problem detected"
+          origin: "ansible"
+          tags:
+            - "qa"
+            - "mongodb"
+            - "database"
+        status_code:
+          - 200
+          - 201
+          - 202
+        return_content: true
+      register: mongodb_alert
+
+    - name: Send API problem alert
+      ansible.builtin.uri:
+        url: "{{ alerta_url }}/alert"
+        method: POST
+        body_format: json
+        body:
+          resource: "api-01"
+          event: "APIDown"
+          environment: "QA"
+          severity: "critical"
+          service:
+            - "API"
+          group: "Application"
+          value: "HTTP 500"
+          text: "Alerta API test detected an application failure"
+          origin: "ansible"
+          tags:
+            - "qa"
+            - "api"
+            - "application"
+        status_code:
+          - 200
+          - 201
+          - 202
+        return_content: true
+      register: api_alert
+
     - name: Send Disk Space alert
       ansible.builtin.uri:
         url: "{{ alerta_url }}/alert"
@@ -79,6 +180,18 @@
         return_content: true
       register: redis_alert
 
+    - name: Display High CPU response
+      ansible.builtin.debug:
+        var: high_cpu_alert.json
+
+    - name: Display MongoDB response
+      ansible.builtin.debug:
+        var: mongodb_alert.json
+
+    - name: Display API response
+      ansible.builtin.debug:
+        var: api_alert.json
+
     - name: Display Disk Space response
       ansible.builtin.debug:
         var: disk_alert.json
@@ -90,3 +203,16 @@
     - name: Display Redis response
       ansible.builtin.debug:
         var: redis_alert.json
+
+    - name: Verify alerts in Alerta
+      ansible.builtin.uri:
+        url: "{{ alerta_url }}/alerts?environment=QA"
+        method: GET
+        status_code: 200
+        return_content: true
+      register: alerta_alerts
+
+    - name: Display alerts returned by Alerta
+      ansible.builtin.debug:
+        var: alerta_alerts.json
+EOF
