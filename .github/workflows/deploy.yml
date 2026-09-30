@@ -6,46 +6,47 @@ on:
       - master
 
 jobs:
-  build-and-test:
+  test:
     runs-on: [self-hosted, Linux, X64]
 
     steps:
-      - name: Checkout Alerta
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Show project files
+      - name: Show repository
         run: |
-          echo "===== Repository ====="
+          echo "Repository:"
           pwd
-          echo
           ls -la
-          echo
-          echo "===== Git ====="
-          git branch --show-current
-          git log -1 --oneline
 
-      - name: Check Python environment
+      - name: Set up Python
         run: |
-          echo "===== Python ====="
           python3 --version
-          pip3 --version || true
+          python3 -m pip --version
 
-      - name: Detect project structure
+      - name: Create virtual environment
         run: |
-          echo "===== Project files ====="
+          python3 -m venv .venv
 
-          [ -f requirements.txt ] && echo "Found requirements.txt"
-          [ -f pyproject.toml ] && echo "Found pyproject.toml"
-          [ -f setup.py ] && echo "Found setup.py"
-
-          echo
-          echo "===== Test directories ====="
-          find . -maxdepth 3 -type d \
-            \( -name tests -o -name test \) \
-            -print
-
-      - name: CI completed
+      - name: Install dependencies
         run: |
-          echo "====================================="
-          echo "Alerta CI checkout/check completed"
-          echo "====================================="
+          .venv/bin/python -m pip install --upgrade pip
+
+          if [ -f requirements.txt ]; then
+            .venv/bin/pip install -r requirements.txt
+          elif [ -f pyproject.toml ]; then
+            .venv/bin/pip install .
+          elif [ -f setup.py ]; then
+            .venv/bin/pip install .
+          else
+            echo "No Python dependency file found"
+          fi
+
+      - name: Run tests
+        run: |
+          if [ -d tests ]; then
+            .venv/bin/python -m pytest tests -v
+          else
+            echo "No tests directory found"
+            exit 0
+          fi
