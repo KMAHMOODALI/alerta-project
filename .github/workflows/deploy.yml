@@ -1,4 +1,4 @@
-name: Alerta CI/CD Test
+name: Alerta CI
 
 on:
   push:
@@ -6,26 +6,46 @@ on:
       - master
 
 jobs:
-  test-runner:
-    runs-on: self-hosted
+  build-and-test:
+    runs-on: [self-hosted, Linux, X64]
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Alerta
         uses: actions/checkout@v4
 
-      - name: Test self-hosted runner
+      - name: Show project files
         run: |
-          echo "GitHub Actions is running on my Ubuntu machine"
-          echo "Hostname:"
-          hostname
-          echo "User:"
-          whoami
-          echo "Current directory:"
+          echo "===== Repository ====="
           pwd
+          echo
+          ls -la
+          echo
+          echo "===== Git ====="
+          git branch --show-current
+          git log -1 --oneline
 
-      - name: Test environment
+      - name: Check Python environment
         run: |
-          echo "Ubuntu:"
-          cat /etc/os-release
-          echo "Python:"
-          python3 --version || true
+          echo "===== Python ====="
+          python3 --version
+          pip3 --version || true
+
+      - name: Detect project structure
+        run: |
+          echo "===== Project files ====="
+
+          [ -f requirements.txt ] && echo "Found requirements.txt"
+          [ -f pyproject.toml ] && echo "Found pyproject.toml"
+          [ -f setup.py ] && echo "Found setup.py"
+
+          echo
+          echo "===== Test directories ====="
+          find . -maxdepth 3 -type d \
+            \( -name tests -o -name test \) \
+            -print
+
+      - name: CI completed
+        run: |
+          echo "====================================="
+          echo "Alerta CI checkout/check completed"
+          echo "====================================="
